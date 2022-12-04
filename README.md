@@ -1,7 +1,7 @@
 # BIMM143 Fall 2022
 ## Mady Welch
 Lab portfolio: 
-- Class 4: [label](Class04/Class04.R)
+- Class 4: [Lab 4 RStudio](Class04/Class04.R)
 - Class 5: 
 - Class 6: 
 - Class 7: 
