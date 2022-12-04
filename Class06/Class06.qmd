@@ -1,0 +1,197 @@
+---
+title: "R Functions Lab"
+author: "Mady Welch"
+format: pdf
+---
+
+## Calculating grades with the lowest score dropped
+
+Input vectors to start with
+
+```{r}
+student1 <- c(100, 100, 100, 100, 100, 100, 100, 90)
+student2 <- c(100, NA, 90, 90, 90, 90, 97, 80)
+student3 <- c(90, NA, NA, NA, NA, NA, NA, NA)
+```
+
+I can start by using the 'mean()' function to calculate an average.
+
+```{r}
+mean(student1)
+```
+
+Find the lowest score in the vector using 'min()'
+
+```{r}
+min(student1)
+```
+
+You can also use 'which.min()' to find the position in the vector the lowest score is in
+
+```{r}
+which.min(student1)
+```
+
+Drop the lowest score from the vector
+
+```{r}
+student1[-which.min(student1)]
+```
+
+Use 'mean()' to calculate the new average grade
+
+```{r}
+mean(student1[-which.min(student1)])
+```
+
+-   This calculation of the mean does not work for student2 or student3 because of NA values in the vectors.
+
+If we set na.rm to TRUE, it will drop any NA values in the vector
+
+```{r}
+mean(student2[-which.min(student2)], na.rm = TRUE)
+```
+
+-   This function drops both the lowest score **and** the NA value.
+
+What about student3?
+
+```{r}
+mean(student3, na.rm = TRUE)
+```
+
+-   This function drops **every** NA value, so the average is only calculated using one score.
+
+**To fix this problem, we need to set the NA values equal to 0 before calculating the average.**
+
+```{r}
+student2[is.na(student2)] <- 0
+student3[is.na(student3)] <- 0
+```
+
+Here are the **new** student2 and student3 score vectors:
+
+```{r}
+student2 
+```
+
+```{r}
+student3
+```
+
+We can now use the previous function used for student1 to calculate the grades for student2 and student3:
+
+```{r}
+mean(student2[-which.min(student2)])
+```
+
+```{r}
+mean(student3[-which.min(student3)])
+```
+
+This function is a little messy, let's clean it up a bit
+
+```{r}
+x <- student1
+x[is.na(x)] <- 0
+mean(x[-which.min(x)])
+```
+
+Now we can calculate the average score for any student 'x' !
+
+#### Now turn it into a function:
+
+```{r}
+grade <- function(x) {
+  x[is.na(x)] <- 0
+mean(x[-which.min(x)])}
+```
+
+```{r}
+grade(student1)
+grade(student2)
+grade(student3)
+```
+
+------------------------------------------------------------------------
+
+> Q2. Using your grade() function and the supplied gradebook, Who is the top scoring student overall in the gradebook? \[3pts\]
+
+```{r}
+url <- "https://tinyurl.com/gradeinput"
+gradebook <- read.csv(url, row.names = 1)
+head(gradebook)
+```
+
+Use 'apply()' to use the gradebook data - 'apply(x, margin, function)'
+
+```{r}
+apply(gradebook, 1, grade)
+```
+
+-   Now we have the average grades for all of the students
+
+Save this answer as "results"
+
+```{r}
+results <- apply(gradebook, 1, grade)
+```
+
+Now we can find the highest scoring student using 'which.max()'
+
+```{r}
+which.max(results)
+```
+
+But what was their score?
+
+```{r}
+results[which.max(results)]
+```
+
+**Student 18 has the highest score**
+
+-------------------------------------------
+
+> Q3. From your analysis of the gradebook, which homework was toughest on students (i.e. obtained the lowest scores overall? \[2pts\]
+
+When we wanted to see the student scores, we looked at rows. But now we can look at the columns to see overall homework scores.
+
+```{r}
+hwscores <- apply(gradebook, 2, sum, na.rm = TRUE)
+hwscores
+```
+
+We can use 'which.min()' to see the lowest homework score:
+
+```{r}
+hwscores[which.min(hwscores)]
+```
+
+**Homework 2 was toughest on students**
+
+-------------------------------------------
+
+> Q4. From your analysis of the gradebook, which homework was most predictive of overall score (i.e. highest correlation with average grade score)? \[1pt\]
+
+```{r}
+mask <- gradebook
+mask[is.na(mask)] <- 0
+
+cor(mask[, 1], results)
+```
+
+That gave us one correlation, but how can we get all of them?
+
+```{r}
+predict <- apply(mask, 2, cor, y = results)
+apply(mask, 2, cor, y = results)
+```
+
+The highest correlation = the most predictive score
+
+```{r}
+predict[which.max(predict)]
+```
+
+**Homework 5 was the most predictive of overall score**

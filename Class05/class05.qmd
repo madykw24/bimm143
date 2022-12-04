@@ -1,0 +1,107 @@
+---
+title: "Class 05: Data Visualization with GGPLOT"
+author: "Mady Welch"
+format: pdf
+---
+
+# Our First ggplot
+
+To use the ggplot2 package first need to have it installed on my computer.
+
+To install package we use the `install.packages()` command.
+
+Can't use it until we use `library(ggplot2)`
+
+```{r}
+library(ggplot2)
+ggplot()
+```
+
+```{r}
+mpg
+```
+
+Our first plot of displ vs. hwy All ggplot() graphs are made in the same way.
+
+-   data + aes + geoms
+
+```{r}
+ggplot(mpg) +
+  aes(x=displ, y=hwy) +
+  geom_point()
+```
+
+Can add more layers:
+
+```{r}
+ggplot(mpg) +
+  aes(x=displ, y=hwy) +
+  geom_point() +
+  geom_line()
+```
+
+```{r}
+ggplot(mpg) +
+  aes(x=displ, y=hwy) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+```
+
+# Plot of Gene Expression Data
+
+First read data from online and store it in environment.
+
+```{r}
+url <- "https://bioboot.github.io/bimm143_S20/class-material/up_down_expression.txt"
+genes <- read.delim(url)
+head(genes)
+```
+
+> Q. How many genes?
+
+```{r}
+nrow(genes)
+```
+
+> Q. What are the columns?
+
+```{r}
+colnames(genes)
+```
+
+> Q. How many upregulated genes? What fraction of total genes is upregulated in this dataset (2 sigfigs)?
+
+```{r}
+table(genes[, "State"])
+round(table(genes[, "State"])/nrow(genes)*100, 2)
+```
+
+## A first version plot of this data Condition1 vs Condition2
+
+```{r}
+ggplot(genes) +
+  aes(x=Condition1, y=Condition2) + 
+  geom_point() 
+```
+
+**Add Color:**
+
+```{r}
+p <- ggplot(genes) +
+  aes(x=Condition1, y=Condition2, col=State) +
+  geom_point()
+p
+```
+
+**Change colors:**
+
+```{r}
+p + scale_colour_manual(values=c("blue", "gray", "red")) 
+```
+
+**Add plot annotations using `labs()` function:**
+
+```{r}
+p + scale_colour_manual(values=c("blue", "gray", "red")) + 
+  labs(title="Gene Expression Changes Upon Drug Treatment", x="Control (no drug)", y="Drug Treatment")
+```

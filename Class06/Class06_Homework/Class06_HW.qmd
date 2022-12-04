@@ -1,0 +1,71 @@
+---
+title: "Class06 Homework"
+author: "Mady Welch"
+format: pdf
+---
+
+## Section 1: Improving analysis code by writing functions
+
+> Section B: Improve the below example code for the analysis of protein drug interactions by abstracting the main activities in your own new function.
+
+> Q6. How would you generalize the original code to work with any set of input protein structures?
+
+We need to install the bio3d package using 'install.packages()'
+
+###### - Had the code chunk with 'install.packages("bio3d"), but I had to remove it because it was causing problems when I tried to render
+
+First run through the code to make sure it works:
+
+```{r}
+library(bio3d)
+s1 <- read.pdb("4AKE") # kinase with drug
+s2 <- read.pdb("1AKE") # kinase no drug
+s3 <- read.pdb("1E4Y") # kinase with drug
+s1.chainA <- trim.pdb(s1, chain="A", elety="CA")
+s2.chainA <- trim.pdb(s2, chain="A", elety="CA")
+s3.chainA <- trim.pdb(s3, chain="A", elety="CA")
+s1.b <- s1.chainA$atom$b
+s2.b <- s2.chainA$atom$b
+s3.b <- s3.chainA$atom$b
+plotb3(s1.b, sse=s1.chainA, typ="l", ylab="Bfactor") 
+plotb3(s2.b, sse=s2.chainA, typ="l", ylab="Bfactor") 
+plotb3(s3.b, sse=s3.chainA, typ="l", ylab="Bfactor")
+```
+
+The first step to make an overall function is to combine **'read.pdb()'** and **'trim.pdb()'**, into one function:
+
+```{r}
+x <- "4AKE"
+readntrim <- function(x) {
+  trim.pdb(read.pdb(x), chain="A", elety="CA")
+}
+
+readntrim("4AKE")
+```
+- This function on its own gives information on the inputted protein. 
+
+
+Using **'plotb3()'** and the original function, **'readntrim()'**, we can make another function for the final portion of the analysis:
+
+```{r}
+x <- "4AKE"
+final_function <- function(x) {
+  plotb3(readntrim(x)$atom$b, sse=readntrim(x), typ="l", ylab="Bfactor")
+}
+```
+
+------------------------------------------------------------------------
+
+### Now we can easily input any protein and analyze their Bfactor trends using our **'final_function()'**
+
+```{r}
+final_function("4AKE")
+```
+
+```{r}
+final_function("1AKE")
+```
+
+```{r}
+final_function("1E4Y")
+```

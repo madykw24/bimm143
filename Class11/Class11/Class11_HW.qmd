@@ -1,0 +1,93 @@
+---
+title: "Class 11"
+author: "Mady Welch"
+format: pdf
+---
+
+## Section 4: Population Scale Analysis
+
+>Q13. Read the file into R and determine the sample size for each genotype and their corresponding median expression levels for each of these genotypes. 
+
+```{r}
+txtfile <- "https://bioboot.github.io/bggn213_W19/class-material/rs8067378_ENSG00000172057.6.txt"
+datatable <- read.table(txtfile)
+head(datatable)
+```
+
+```{r}
+summary(datatable)
+table(datatable$geno)
+```
+
+**Genome Sample Sizes:**
+
+**A/A = 108**
+
+**A/G = 233** 
+
+**G/G = 121**
+
+
+
+```{r}
+library(ggplot2)
+
+dataplot <- ggplot(datatable) +
+  aes(x=geno, y=exp, fill=geno) +
+  geom_boxplot(notch=TRUE)
+
+dataplot
+```
+
+**Median Expression Levels:**
+
+**A/A ~ 32** 
+
+**A/G ~ 25** 
+
+**G/G ~ 20** 
+
+
+>Q14. Generate a boxplot with a box per genotype, what could you infer from the relative expression value between A/A and G/G displayed in this plot? Does the SNP effect the expression of ORMDL3?
+
+The median expression level for A/A is much higher than G/G, but the ranges for A/A and G/G overlap. We can most likely assume that the SNP does slightly affect the expression of ORMDL3.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

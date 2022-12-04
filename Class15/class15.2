@@ -1,0 +1,48 @@
+---
+title: "Class 15"
+author: "Mady Welch"
+format: html
+---
+
+## Using RStudio to read your output 
+
+```{r}
+zebra <- read.table("mm-second.x.zebrafish.tsv", col.names = c("qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore"))
+zebra
+```
+
+Histogram of bitscore: 
+
+```{r}
+hist(zebra$bitscore, breaks = 30)
+```
+
+Relationship between bitscore and pident: 
+
+```{r}
+library(ggplot2)
+ggplot(zebra, aes(pident, bitscore)) + geom_point(alpha=0.1) 
+```
+```{r}
+ggplot(zebra, aes((zebra$pident * (zebra$qend - zebra$qstart)), bitscore)) + geom_point(alpha=0.1) + geom_smooth()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

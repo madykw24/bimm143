@@ -1,0 +1,179 @@
+---
+title: "Class09 Structural Bioinformatics"
+author: "Mady Welch"
+format: pdf
+---
+
+## PDB Statistics
+
+Download a CSV file from the PDB site and open it: 
+```{r}
+PdbStats <- read.csv("Data Export Summary.csv")
+PdbStats
+```
+
+> Q1. What percentage of structures in the PDB are solved by X-Ray and Electron Microscopy?
+
+```{r}
+PdbStats$X.ray
+PdbStats$EM
+PdbStats$Total
+((150342 + 8866 + 7911 + 2510 + 154 + 11 + 8534 + 1540 + 2681 + 74 + 6 + 0)/(171221 + 10444 + 10876 + 4025 + 191 + 22))*100
+```
+- 92.81% of structures in the PDB are solved by X-ray and Electron Microscopy. 
+
+> Q2. What proportion of structures in the PDB are protein?
+
+```{r}
+(171221 / (171221 + 10444 + 10876 + 4025 + 191 + 22))*100
+```
+- 87.01% structures are protein.
+
+> Q3. Type HIV in the PDB website search box on the home page and determine how many HIV-1 protease structures are in the current PDB?
+
+- 4,703 structures. 
+
+
+## Visualizing the HIV-1 Protease Structure
+
+### Using Mol\*
+
+**The important role of water**
+
+> Q4. Water molecules normally have 3 atoms. Why do we see just one atom per water molecule in this structure?
+
+-   Because hydrogen atoms are so small, we are not able to see them in the structure.
+
+> Q5. There is a critical "conserved" water molecule in the binding site. Can you identify this water molecule? What residue number does this water molecule have?
+
+- HOH 308 
+
+Now you should be able to produce an image similar or even superior to Figure 2 and save it to an image file.
+
+> Q6. Generate and save a figure clearly showing the two distinct chains of HIV-protease along with the ligand. You might also consider showing the catalytic residues ASP 25 in each chain (we recommend "Ball & Stick" for these side-chains). Add this figure to your Quarto document.
+
+![HIV-Pr structure from 1HSG](1HSG.png)
+
+## Introduction to Bio3D in R
+
+Bio3D is an R package for structural bioinformatics. To use it we need to call it up with `library()`
+
+```{r}
+library(bio3d)
+```
+
+To read a PDB file we can use `read.pdb()`
+
+```{r}
+pdb <- read.pdb("1hsg")
+pdb
+```
+
+> Q7: How many amino acid residues are there in this pdb object?
+
+-   198
+
+> Q8: Name one of the two non-protein residues?
+
+-   HOH
+
+> Q9: How many protein chains are in this structure?
+
+-   2
+
+The ATOM records of a PDB file are stored in `pdb$atom`
+
+```{r}
+head(pdb$atom)
+```
+
+**Note: Q10-Q12 were done on the lab handout**
+
+# Comparative Analysis of Adenylate Kinase (ADK)
+
+We will start our analysis with a single PDB id code (from the PDB database): 1AKE
+
+First we get its primary sequence:
+
+```{r}
+aa <- get.seq("1ake_A")
+aa
+```
+
+Run a BLAST search:
+
+```{r}
+# Blast or hmmer search 
+b <- blast.pdb(aa)
+```
+
+Make a plot:
+
+```{r}
+# Plot a summary of search results
+hits <- plot(b)
+```
+
+```{r}
+# List out some 'top hits'
+head(hits$pdb.id)
+```
+
+Use these ADK structures for analysis:
+
+```{r}
+hits <- NULL
+hits$pdb.id <- c('1AKE_A','6S36_A','6RZE_A','3HPR_A','1E4V_A','5EJE_A','1E4Y_A','3X2S_A','6HAP_A','6HAM_A','4K46_A','3GMT_A','4PZL_A')
+```
+
+Download all these PDB files from the online database
+
+```{r}
+# Download releated PDB files
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+```
+
+### Align and superpose structures
+
+We will use the `pdbaln()` function to align and fit the identified structures.
+
+```{r}
+# Align releated PDBs
+pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
+pdbs
+```
+
+
+# Jump to PCA
+
+```{r}
+# Perform PCA
+pc.xray <- pca(pdbs)
+plot(pc.xray)
+```
+
+`rmsd()` will calculate all pairwise RMSD values of the structural ensemble. This facilitates clustering analysis based on the pairwise structural deviation.
+
+```{r}
+# Calculate RMSD
+rd <- rmsd(pdbs)
+
+# Structure-based clustering
+hc.rd <- hclust(dist(rd))
+grps.rd <- cutree(hc.rd, k=3)
+
+plot(pc.xray, 1:2, col="grey50", bg=grps.rd, pch=21, cex=1)
+```
+
+## Further Visualization
+
+`mktrj()` can be used to generate a trajectory PDB file by interpolating along a give PC (eigenvector):
+
+```{r}
+# Visualize first principal component
+pc1 <- mktrj(pc.xray, pc=1, file="pc_1.pdb")
+```
+
+-   You can open this file, pc_1.pdb, in Mol\*.
+
+![](PC_1.PDB_animate-trajectory.mp4)

@@ -1,0 +1,320 @@
+---
+title: "Class 12"
+author: "Mady Welch"
+format: pdf
+---
+
+## Import countData and colData
+
+```{r}
+counts <- read.csv("airway_scaledcounts.csv", row.names = 1)
+metadata <- read.csv("airway_metadata.csv")
+
+head(counts)
+```
+
+```{r}
+head(metadata)
+```
+
+Lets check the correspondence of the metadata and count data.
+
+```{r}
+metadata$id
+colnames(counts)
+```
+
+To check that they are in the same order we can use `==` test of equality and `all()`, which tells us if all of the outcomes are TRUE. 
+
+```{r}
+all(metadata$id == colnames(counts))
+```
+
+
+
+>Q1. How many genes are in this dataset?
+
+```{r}
+nrow(counts)
+```
+- 38,694 genes are in the dataset. 
+
+
+>Q2. How many 'control' cell lines do we have?
+
+```{r}
+table(metadata$dex)
+```
+- We have 4 control cell lines.
+
+
+
+
+## Analysis via comparison of CONTROL vs TREATED
+
+
+The "treated" have the dex drug and the "control" do not. 
+First I need to be able to extract just the control columns in the counts data set.
+
+```{r}
+control.inds <- metadata$dex == "control"
+metadata[control.inds,]
+```
+
+
+
+This code chunk will find the sample ids for those labeled "control" and then calculate the mean counts per gene across these samples. 
+
+```{r}
+control <- metadata[metadata[,"dex"]=="control",]
+control.counts <- counts[ ,control$id]
+control.mean <- rowSums( control.counts )/4 
+head(control.mean)
+```
+
+There is another way we could do this: using the dplyr package from tidyverse. 
+
+```{r}
+library(dplyr)
+control <- metadata %>% filter(dex=="control")
+control.counts <- counts %>% select(control$id) 
+control.mean <- rowSums(control.counts)/4
+head(control.mean)
+```
+
+
+>Q3. How would you make the above code in either approach more robust? 
+
+- The exact code above would not give the correct mean values becuase it include `/4`, which only works in this case because there are 4 control cell lines. If we added more data, we would need to change the code to divide by the new number of control cell lines. 
+
+>Q4. Follow the same procedure for the treated samples (i.e. calculate the mean per gene across drug treated samples and assign to a labeled vector called treated.mean) 
+
+```{r}
+treated <- metadata[metadata[,"dex"]=="treated",]
+treated.counts <- counts[ ,treated$id]
+treated.mean <- rowSums( treated.counts )/4 
+head(treated.mean)
+```
+
+
+We can combine the meancount data: 
+```{r}
+meancounts <- data.frame(control.mean, treated.mean)
+colSums(meancounts)
+```
+
+
+>Q5.
+  a) Create a scatter plot showing the mean of the treated samples against the mean of the control samples.
+
+```{r}
+plot(meancounts)
+```
+
+  >Q6. Try plotting both axes on a log sclae.
+  
+This is very heavily skewed and over a wide range... this calls for a log transformation
+
+```{r}
+plot(meancounts, log="xy")
+```
+
+
+
+>Q5. 
+  b) .You could also use the ggplot2 package to make this figure producing the plot below. What geom_?() function would you use for this plot?
+  
+  - geom_point.
+
+```{r}
+library(ggplot2)
+ggplot(meancounts) + 
+  aes(x=control.mean, y=treated.mean) + 
+  geom_point(col = "dark green")
+```
+
+
+
+We like working with log transformed data as it can help make things more straightforward to interpret. 
+
+If we have no change:
+```{r}
+log2(20/20)
+```
+
+What if we had a doubling? 
+```{r}
+log2(40/20)
+```
+
+Half?
+```{r}
+log2(10/20)
+```
+
+
+We like working with log2 fold-change values. Let's calculate them for our data.
+
+```{r}
+meancounts$log2fc <- log2(meancounts$treated.mean/meancounts$control.mean)
+head(meancounts)
+```
+- There are some weird results such as NaN (not a number) and -Inf (negative infinity). 
+
+Let's filter our data to remove these genes (rows): 
+
+```{r}
+to.keep.inds <- rowSums(meancounts[, 1:2] == 0) == 0
+head(to.keep.inds)
+```
+
+```{r}
+mycounts <- meancounts[to.keep.inds, ]
+nrow(mycounts)
+```
+
+A common threshold for calling genes as differentially expressed is a log2 fold-change of +2 or -2. 
+
+```{r}
+sum(mycounts$log2fc >= +2)
+```
+
+What % is this? 
+
+```{r}
+sum(mycounts$log2fc >= +2)/nrow(mycounts) *100
+```
+
+>Q8. How many up regulated genes we have at the greater than 2 fc level?
+
+```{r}
+sum(mycounts$log2fc > +2)
+```
+
+
+What proportion is downregulated? 
+
+```{r}
+sum(mycounts$log2fc <= -2)/nrow(mycounts) *100
+```
+
+
+>Q9. How many down regulated genes we have at the greater than 2 fc level?
+
+```{r}
+sum(mycounts$log2fc > -2)
+```
+
+
+
+>Q7. What is the purpose of the arr.ind argument in the which() function call above? Why would we then take the first column of the output and need to call the unique() function?
+
+- `arr.ind` calls for values that are TRUE, where the genes and sample have 0 counts. Calling `unique()` makes sure we don't double count any rows that have 0 counts in both samples. 
+
+
+We need some stats to check if the drug induced difference is significant. 
+
+
+## Turn to DESeq2 
+
+Load DESeq2:
+```{r, message = FALSE}
+library(DESeq2)
+```
+
+The main function in the DESeq2 package is called `deseq()`. It wants our count data and our colData (metadata) as input in a specific way. 
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = counts, 
+                       colData = metadata, 
+                       design = ~dex)
+```
+
+Now I can run the DESeq analysis
+
+```{r}
+dds <- DESeq(dds)
+res <-results(dds)
+res
+```
+
+What we have so far is the log2 fold-change and the adjusted p-value for significance. 
+
+
+
+
+## Data Visualization
+
+A first plot:
+
+```{r}
+plot(res$log2FoldChange, res$padj)
+```
+
+All the interesting p-values are down below zero... 
+I'm going to take the log of the p-value
+Note: Take the -log to flip the plot.
+
+```{r}
+plot(res$log2FoldChange, -log(res$padj))
+abline(v = c(-2, 2), col = "green")
+abline(h = -log(0.05), col = "red")
+```
+
+Setup our custom print color vector: 
+
+```{r}
+mycols <- rep("gray", nrow(res))
+mycols[abs(res$log2FoldChange) > 2] <- "red"
+
+inds <- (res$padj < 0.01) & (abs(res$log2FoldChange) > 2 )
+mycols[ inds ] <- "blue"
+```
+
+Volcano plot with custom colors and cut-off lines: 
+
+```{r}
+plot( res$log2FoldChange,  -log(res$padj), 
+ col=mycols, ylab="-Log(P-value)", xlab="Log2(FoldChange)" )
+abline(v=c(-2,2), col="gray", lty=2)
+abline(h=-log(0.1), col="gray", lty=2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
