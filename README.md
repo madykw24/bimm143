@@ -1,5 +1,7 @@
 # BIMM143 Fall 2022
 ## Mady Welch
+theme: minimal 
+
 Lab portfolio: 
 - Class 4: [Lab 4 .R](Class04/Class04.R)
 - Class 5: [Lab 5 .qmd](Class05/class05.qmd)
